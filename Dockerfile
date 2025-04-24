@@ -42,7 +42,7 @@ ENV PATH="$PATH:/home/$USERNAME/Android/sdk/cmdline-tools/latest/bin"
 ENV PATH="$PATH:/home/$USERNAME/Android/sdk/platform-tools"
 
 # Install Flutter
-RUN git clone --branch 3.16.9 https://github.com/flutter/flutter.git && \
+RUN git clone --branch 3.19.5 https://github.com/flutter/flutter.git && \
     echo "export PATH=\$PATH:/home/$USERNAME/flutter/bin" >> ~/.bashrc && \
     echo "export PATH=\$PATH:/home/$USERNAME/flutter/bin/cache/dart-sdk/bin" >> ~/.bashrc
 ENV PATH="$PATH:/home/$USERNAME/flutter/bin"
@@ -62,14 +62,14 @@ RUN flutter pub global activate melos
 # Verify Melos and FVM installations
 RUN melos --version && fvm --version
 
-# Install Fvm Flutter 3.16.9
-RUN fvm install 3.16.9
+# Install Fvm Flutter
+RUN fvm install 3.19.5
 
 # Verify installed flutter in FVM
 RUN fvm list
 
-# Make flutter 3.16.9 as a global version
-RUN fvm global 3.16.9
+# Make flutter
+RUN fvm global 3.19.5
 
 # Set working directory to root
 WORKDIR /
