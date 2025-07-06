@@ -31,10 +31,10 @@ RUN mkdir -p Android/sdk && mkdir -p .android && touch .android/repositories.cfg
     yes | Android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses && \
     Android/sdk/cmdline-tools/latest/bin/sdkmanager \
         "cmdline-tools;latest" \
-        "build-tools;33.0.2" \
+        "build-tools;34.0.0" \
         "platform-tools" \
-        "platforms;android-33" \
-        "sources;android-33"
+        "platforms;android-34" \
+        "sources;android-34"
 
 # Set environment variables for Android SDK
 ENV ANDROID_SDK_ROOT="/home/$USERNAME/Android/sdk"
@@ -42,7 +42,7 @@ ENV PATH="$PATH:/home/$USERNAME/Android/sdk/cmdline-tools/latest/bin"
 ENV PATH="$PATH:/home/$USERNAME/Android/sdk/platform-tools"
 
 # Install Flutter
-RUN git clone --branch 3.19.5 https://github.com/flutter/flutter.git && \
+RUN git clone --branch 3.19.6 https://github.com/flutter/flutter.git && \
     echo "export PATH=\$PATH:/home/$USERNAME/flutter/bin" >> ~/.bashrc && \
     echo "export PATH=\$PATH:/home/$USERNAME/flutter/bin/cache/dart-sdk/bin" >> ~/.bashrc
 ENV PATH="$PATH:/home/$USERNAME/flutter/bin"
@@ -63,13 +63,13 @@ RUN flutter pub global activate melos
 RUN melos --version && fvm --version
 
 # Install Fvm Flutter
-RUN fvm install 3.19.5
+RUN fvm install 3.19.6
 
 # Verify installed flutter in FVM
 RUN fvm list
 
 # Make flutter
-RUN fvm global 3.19.5
+RUN fvm global 3.19.6
 
 # Set working directory to root
 WORKDIR /
