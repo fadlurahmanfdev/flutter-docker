@@ -1,78 +1,74 @@
-# Use Ubuntu 22.04 as the base image
 FROM ubuntu:22.04
 
-# Set noninteractive mode to suppress prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Update and install necessary packages
-RUN apt-get update && apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends \
-        wget \
-        unzip \
-        curl \
-        git \
-        openjdk-17-jdk \
-        openssh-client && \
-    rm -rf /var/lib/apt/lists/*
+# =====================
+# System dependencies
+# =====================
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    wget \
+    unzip \
+    git \
+    openjdk-17-jdk \
+    openssh-client \
+    ca-certificates \
+    bash \
+    xz-utils \
+    && rm -rf /var/lib/apt/lists/*
 
-# Create a non-root user
+# =====================
+# Create non-root user
+# =====================
 ARG USERNAME=fadlurahmanfdev
-RUN useradd -m $USERNAME
+RUN useradd -ms /bin/bash $USERNAME
 USER $USERNAME
 WORKDIR /home/$USERNAME
 
-# Install Android SDK
-RUN mkdir -p Android/sdk && mkdir -p .android && touch .android/repositories.cfg && \
-    wget -O sdk-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-10406996_latest.zip && \
-    unzip sdk-tools.zip -d Android/sdk && rm sdk-tools.zip && \
-    mv Android/sdk/cmdline-tools Android/sdk/cmdline-tools-temp && \
-    mkdir Android/sdk/cmdline-tools && \
-    mv Android/sdk/cmdline-tools-temp Android/sdk/cmdline-tools/latest && \
-    yes | Android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses && \
-    Android/sdk/cmdline-tools/latest/bin/sdkmanager \
-        "cmdline-tools;latest" \
-        "build-tools;33.0.2" \
-        "platform-tools" \
-        "platforms;android-33" \
-        "sources;android-33"
+# =====================
+# Android SDK
+# =====================
+ENV ANDROID_SDK_ROOT=/home/$USERNAME/Android/sdk
+ENV PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin
+ENV PATH=$PATH:$ANDROID_SDK_ROOT/platform-tools
 
-# Set environment variables for Android SDK
-ENV ANDROID_SDK_ROOT="/home/$USERNAME/Android/sdk"
-ENV PATH="$PATH:/home/$USERNAME/Android/sdk/cmdline-tools/latest/bin"
-ENV PATH="$PATH:/home/$USERNAME/Android/sdk/platform-tools"
+RUN mkdir -p $ANDROID_SDK_ROOT/cmdline-tools && \
+    wget -q https://dl.google.com/android/repository/commandlinetools-linux-10406996_latest.zip -O cmdline-tools.zip && \
+    unzip cmdline-tools.zip && \
+    mv cmdline-tools $ANDROID_SDK_ROOT/cmdline-tools/latest && \
+    rm cmdline-tools.zip && \
+    mkdir -p ~/.android && touch ~/.android/repositories.cfg
 
-# Install Flutter
-RUN git clone --branch 3.16.9 https://github.com/flutter/flutter.git && \
-    echo "export PATH=\$PATH:/home/$USERNAME/flutter/bin" >> ~/.bashrc && \
-    echo "export PATH=\$PATH:/home/$USERNAME/flutter/bin/cache/dart-sdk/bin" >> ~/.bashrc
-ENV PATH="$PATH:/home/$USERNAME/flutter/bin"
-ENV PATH="$PATH:/home/$USERNAME/flutter/bin/cache/dart-sdk/bin"
+RUN yes | sdkmanager --licenses
 
-# Run Flutter doctor to pre-cache dependencies
-RUN flutter doctor -v
+RUN sdkmanager \
+    "platform-tools" \
+    "platforms;android-35" \
+    "build-tools;35.0.0"
+
+# =====================
+# Flutter via FVM
+# =====================
+ENV PUB_CACHE=/home/$USERNAME/.pub-cache
+ENV PATH=$PATH:$PUB_CACHE/bin
 
 # Install FVM
-RUN dart pub global activate fvm && \
-    echo "export PATH=\$PATH:/home/$USERNAME/.pub-cache/bin" >> ~/.bashrc
-ENV PATH="$PATH:/home/$USERNAME/.pub-cache/bin"
+RUN curl -fsSL https://raw.githubusercontent.com/leoafarias/fvm/main/scripts/install.sh | bash
 
-# Install Melos
+# ✅ CORRECT PATH
+ENV PATH=$PATH:/home/$USERNAME/fvm/bin
+
+RUN fvm install 3.29.3 && \
+    fvm global 3.29.3
+
+ENV PATH=$PATH:/home/$USERNAME/fvm/default/bin
+
+# Pre-cache Flutter artifacts
+RUN flutter doctor -v && flutter precache --android
+
+# Optional tools
 RUN flutter pub global activate melos
 
-# Verify Melos and FVM installations
-RUN melos --version && fvm --version
+WORKDIR /workspace
 
-# Install Fvm Flutter
-RUN fvm install 3.16.9
-
-# Verify installed flutter in FVM
-RUN fvm list
-
-# Make flutter
-RUN fvm global 3.16.9
-
-# Set working directory to root
-WORKDIR /
-
-# Default command
 CMD ["/bin/bash"]
